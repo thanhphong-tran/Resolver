@@ -786,6 +786,7 @@ public extension UIViewController {
 ///
 @propertyWrapper public struct LazyInjected<Service> {
     private var initialize: Bool = true
+    private let lock = ResolverRecursiveLock()
     private var service: Service!
     public var container: Resolver?
     public var name: Resolver.Name?
@@ -800,10 +801,12 @@ public extension UIViewController {
     }
     public var wrappedValue: Service {
         mutating get {
+            lock.lock()
             if initialize {
                 self.initialize = false
                 self.service = container?.resolve(Service.self, name: name, args: args) ?? Resolver.resolve(Service.self, name: name, args: args)
             }
+            lock.unlock()
             return service
         }
         mutating set { service = newValue  }
